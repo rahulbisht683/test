@@ -1,0 +1,3 @@
+export const Accesstoken =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjYW5kaWRhdGVfbmFtZSI6InJhaHVsLmJpc2h0QGFpZGV0aWMuaW4iLCJpc19jYW5kaWRhdGUiOnRydWUsImlhdCI6MTY5MTE1OTYwMSwiZXhwIjoxNjkxNjc4MDAxfQ.MvdbR9GLTt_p4TxFvEkzk2jv7KMjVwoNbsiKb2NTe2M';
+export const Endpoint = 'https://api.poc.graphql.dev.vnplatform.com/graphql';

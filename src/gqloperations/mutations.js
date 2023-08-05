@@ -57,3 +57,9 @@ export const UPDATE_PROFILE = gql`
     }
   }
 `;
+
+export const DELETE_PROFILE = gql`
+  mutation DeleteProfile($deleteProfileId: String!) {
+    deleteProfile(id: $deleteProfileId)
+  }
+`;

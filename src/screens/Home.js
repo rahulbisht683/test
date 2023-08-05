@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -17,25 +17,96 @@ import Icon2 from 'react-native-vector-icons/Ionicons';
 import Icon3 from 'react-native-vector-icons/Entypo';
 import {useTheme} from '../context/themecontext';
 import {RFValue} from 'react-native-responsive-fontsize';
+import {useIsFocused} from '@react-navigation/native';
 import ProfileCard from '../components/ProfileCard';
 import {selectedprofile} from '../context/selectedProfile';
 import {GetAllProfiles} from '../gqloperations/queries';
-import {useQuery} from '@apollo/client';
+import {useMutation, useQuery} from '@apollo/client';
+import CircularLoader from '../components/Loader';
+import {DELETE_PROFILE} from '../gqloperations/mutations';
+import Snackbar from 'react-native-snackbar';
 
 const Home = ({navigation, route}) => {
+  const isFocused = useIsFocused();
   const {theme, toggleTheme, themetype} = useTheme();
   const [isEnabled, setIsEnabled] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [editprofilestate, seteditprofilestate] = useState(-1);
   const [searchedData, setSearchedData] = useState([]);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [profiles, setProfiles] = useState([]);
+
   const [search, setSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [results, setResults] = useState([]);
 
   const {selecteddata, changeData} = selectedprofile();
+  const flatListRef = useRef(null);
 
-  const {loading: queryLoading, data} = useQuery(GetAllProfiles, {
+  const [deleteProfile, {loading: mutationLoading, error: mutationError}] =
+    useMutation(DELETE_PROFILE);
+
+  // Function to simulate the actual search operation
+  const performSearch = inputval => {
+    refetch({searchString: inputval});
+    console.log('datammm', data?.getAllProfiles?.profiles);
+  };
+
+  let debounceTimer;
+
+  const handleSearchChange = inputValue => {
+    setSearchTerm(inputValue);
+
+    clearTimeout(debounceTimer);
+
+    debounceTimer = setTimeout(() => {
+      performSearch(inputValue);
+    }, 500);
+  };
+
+  useEffect(() => {
+    if (isFocused == false) {
+    } else {
+      refetch();
+      seteditprofilestate(-1);
+    }
+  }, [isFocused]);
+
+  const handledeleteProfile = item => {
+    setLoading(true);
+    setDeleteModal(false);
+    deleteProfile({
+      variables: {
+        deleteProfileId: selecteddata.id,
+      },
+    })
+      .then(result => {
+        setLoading(false);
+        refetch();
+        setLoading(false);
+
+        Snackbar.show({
+          text: 'User Deleted Successfully',
+          duration: Snackbar.LENGTH_LONG,
+        });
+      })
+      .catch(error => {
+        setLoading(false);
+        console.error('Error creating user:', error.message);
+        Snackbar.show({
+          text: 'Something Went Wrong',
+          duration: Snackbar.LENGTH_LONG,
+        });
+      });
+  };
+
+  const {
+    loading: queryLoading,
+    data,
+    error,
+    refetch,
+    fetchMore,
+  } = useQuery(GetAllProfiles, {
     variables: {
       orderBy: {
         key: 'is_verified',
@@ -43,37 +114,15 @@ const Home = ({navigation, route}) => {
       },
       rows: 10,
       page: 0,
-      searchString: '',
+      searchString: searchTerm,
     },
+    fetchPolicy: 'cache-and-network',
   });
-  // useEffect(() => {
-  //   setLoading(queryLoading);
-  // }, [queryLoading]);
 
   useEffect(() => {
-    if (data) {
-      // Update the profiles state when data is fetched
-      setProfiles(prevProfiles => [
-        ...prevProfiles,
-        ...data.getAllProfiles.profiles,
-      ]);
-      setLoading(false);
-    }
-  }, [data]);
+    setLoading(queryLoading);
+  }, [queryLoading]);
 
-  const sortingdata = () => {};
-
-  // const fetchData = async () => {
-  //       try {
-  //         setLoading(true);
-  //         setData(prevData => [...prevData, ...newData]);
-  //         setPage(page + 1);
-  //         setLoading(false);
-  //       } catch (error) {
-  //         console.error('Error fetching data:', error);
-  //         setLoading(false);
-  //       }
-  //     };
   const handleedit = index => {
     console.log('dd', index);
     if (editprofilestate == index) {
@@ -82,73 +131,56 @@ const Home = ({navigation, route}) => {
       seteditprofilestate(index);
     }
   };
-  const handlenavigation = async type => {
-    await changeData();
+  const handlenavigation = async (type, data) => {
+    if (type != 'create') {
+      await changeData(data);
+    } else {
+      changeData(null);
+    }
+
     navigation.navigate('CreateProfile', {type: type});
   };
 
-  // const handleLoadMore = () => {
-  //   // Fetch more data when the FlatList is close to the end
-  //   if (!loading) {
-  //     setPage((prevPage) => prevPage + 1);
-  //   }
-  // };
+  const handleLoadMore = () => {
+    // console.log(data.getAllProfiles.profiles);
+    if (
+      !loading &&
+      data &&
+      data.getAllProfiles.size > data.getAllProfiles.profiles.length
+    ) {
+      fetchMore({
+        variables: {
+          page: page + 1,
+        },
 
-  let data1 = [
-    {
-      name: 'Rahul Bisht',
-      email: 'rahul.bisht@aidetic.in',
-      message:
-        'Lorem ipsum dolor sit amet consectetur. Tortor ut cras mauris at faucibus pharetra pellentesque diam pulvinar. Mauris penatibus ut luctus posuere posuere odio nisi mauris aliquet. Sapien aliquet porta tincidunt massa id quam pharetra. Massa vitae feugiat vulputate et praesent nisl neque nunc tortor.',
-    },
-    {
-      name: 'Rahul Bisht',
-      email: 'rahul.bisht@aidetic.in',
-      message:
-        'Lorem ipsum dolor sit amet consectetur. Tortor ut cras mauris at faucibus pharetra pellentesque diam pulvinar. Mauris penatibus ut luctus posuere posuere odio nisi mauris aliquet. Sapien aliquet porta tincidunt massa id quam pharetra. Massa vitae feugiat vulputate et praesent nisl neque nunc tortor.',
-    },
-    {
-      name: 'Rahul Bisht',
-      email: 'rahul.bisht@aidetic.in',
-      message:
-        'Lorem ipsum dolor sit amet consectetur. Tortor ut cras mauris at faucibus pharetra pellentesque diam pulvinar. Mauris penatibus ut luctus posuere posuere odio nisi mauris aliquet. Sapien aliquet porta tincidunt massa id quam pharetra. Massa vitae feugiat vulputate et praesent nisl neque nunc tortor.',
-    },
-    {
-      name: 'Rahul Bisht',
-      email: 'rahul.bisht@aidetic.in',
-      message:
-        'Lorem ipsum dolor sit amet consectetur. Tortor ut cras mauris at faucibus pharetra pellentesque diam pulvinar. Mauris penatibus ut luctus posuere posuere odio nisi mauris aliquet. Sapien aliquet porta tincidunt massa id quam pharetra. Massa vitae feugiat vulputate et praesent nisl neque nunc tortor.',
-    },
-  ];
-  let datas = [
-    {
-      name: 'Rahul Bisht',
-      email: 'rahul.bisht@aidetic.in',
-      message:
-        'Lorem ipsum dolor sit amet consectetur. Tortor ut cras mauris at faucibus pharetra pellentesque diam pulvinar. Mauris penatibus ut luctus posuere posuere odio nisi mauris aliquet. Sapien aliquet porta tincidunt massa id quam pharetra. Massa vitae feugiat vulputate et praesent nisl neque nunc tortor.',
-    },
-    {
-      name: 'Rahul Bisht',
-      email: 'rahul.bisht@aidetic.in',
-      message:
-        'Lorem ipsum dolor sit amet consectetur. Tortor ut cras mauris at faucibus pharetra pellentesque diam pulvinar. Mauris penatibus ut luctus posuere posuere odio nisi mauris aliquet. Sapien aliquet porta tincidunt massa id quam pharetra. Massa vitae feugiat vulputate et praesent nisl neque nunc tortor.',
-    },
-    {
-      name: 'Rahul Bisht',
-      email: 'rahul.bisht@aidetic.in',
-      message:
-        'Lorem ipsum dolor sit amet consectetur. Tortor ut cras mauris at faucibus pharetra pellentesque diam pulvinar. Mauris penatibus ut luctus posuere posuere odio nisi mauris aliquet. Sapien aliquet porta tincidunt massa id quam pharetra. Massa vitae feugiat vulputate et praesent nisl neque nunc tortor.',
-    },
-    {
-      name: 'Rahul Bisht',
-      email: 'rahul.bisht@aidetic.in',
-      message:
-        'Lorem ipsum dolor sit amet consectetur. Tortor ut cras mauris at faucibus pharetra pellentesque diam pulvinar. Mauris penatibus ut luctus posuere posuere odio nisi mauris aliquet. Sapien aliquet porta tincidunt massa id quam pharetra. Massa vitae feugiat vulputate et praesent nisl neque nunc tortor.',
-    },
-  ];
+        updateQuery: (prev, {fetchMoreResult}) => {
+          console.log(
+            'fetchMoreResult',
+            fetchMoreResult.getAllProfiles.profiles,
+          );
+          if (!fetchMoreResult) return prev;
+          return {
+            getAllProfiles: {
+              ...prev.getAllProfiles,
+              profiles: [
+                ...prev.getAllProfiles.profiles,
+                ...fetchMoreResult.getAllProfiles.profiles,
+              ],
+            },
+          };
+        },
+      });
+      setPage(page + 1);
+      console.log('page', page);
+    }
+  };
 
   const toggleSwitch = () => {
     toggleTheme();
+  };
+
+  const renderFooter = () => {
+    return loading ? <ActivityIndicator size="large" color="#0000ff" /> : null;
   };
 
   return (
@@ -199,12 +231,16 @@ const Home = ({navigation, route}) => {
                 // backgroundColor: 'red',
                 paddingVertical: height * 0.02,
               }}>
-              <View style={[styles.buttonDiv, {backgroundColor: '#EEEEEE'}]}>
+              <TouchableOpacity
+                onPress={() => setDeleteModal(false)}
+                style={[styles.buttonDiv, {backgroundColor: '#EEEEEE'}]}>
                 <Text style={styles.textd}>Cancle</Text>
-              </View>
-              <View style={styles.buttonDiv}>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handledeleteProfile()}
+                style={styles.buttonDiv}>
                 <Text style={[styles.textd, {color: 'white'}]}>Delete</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -241,6 +277,7 @@ const Home = ({navigation, route}) => {
       </View>
       <View style={styles.searchview}>
         <TextInput
+          onChangeText={value => handleSearchChange(value)}
           placeholderTextColor={theme.text}
           style={[styles.inputbox, {color: theme.text}]}
           placeholder="Search"
@@ -260,22 +297,46 @@ const Home = ({navigation, route}) => {
           </Text>
         </TouchableOpacity>
       </View>
-
-      <FlatList
-        data={datas}
-        contentContainerStyle={{paddingBottom: height * 0.02}}
-        showsVerticalScrollIndicator={false}
-        keyExtractor={(item, index) => `key${index}`}
-        onEndReached={handleLoadMore} // Implement scroll pagination
-        onEndReachedThreshold={0.1}
-        renderItem={({item, index}) => (
-          <ProfileCard
-            props={{item, index, editprofilestate, deleteModal}}
-            editremove={() => handleedit(index)}
-            newScreen={type => handlenavigation(type)}
-            removeP={() => (setDeleteModal(true), seteditprofilestate(-1))}
-          />
-        )}></FlatList>
+      {loading ? (
+        <CircularLoader />
+      ) : data?.getAllProfiles?.profiles.length == 0 ? (
+        <View
+          style={{
+            width: '100%',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: height * 0.02,
+          }}>
+          <Text style={styles.textd}>No profile found</Text>
+        </View>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={data?.getAllProfiles?.profiles || []}
+          contentContainerStyle={{
+            paddingBottom: height * 0.02,
+            // marginTop: height * 0.02,
+          }}
+          showsVerticalScrollIndicator={false}
+          keyExtractor={(item, index) => `key${index}`}
+          onEndReached={handleLoadMore} // Implement scroll pagination
+          onEndReachedThreshold={0.1}
+          ListFooterComponent={renderFooter}
+          renderItem={({item, index}) => (
+            <>
+              <ProfileCard
+                props={{item, index, editprofilestate, deleteModal}}
+                editremove={() => handleedit(index)}
+                newScreen={type => handlenavigation(type, item)}
+                removeP={() => (
+                  setDeleteModal(true),
+                  seteditprofilestate(-1),
+                  changeData(item)
+                )}
+              />
+            </>
+          )}></FlatList>
+      )}
     </View>
   );
 };
@@ -433,59 +494,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-
-//     import React, { useState, useEffect } from 'react';
-// import { View, FlatList, ActivityIndicator, Text } from 'react-native';
-
-// const YourComponent = () => {
-//   const [data, setData] = useState([]);
-//   const [page, setPage] = useState(1);
-//   const [loading, setLoading] = useState(false);
-
-//   useEffect(() => {
-//     // Fetch initial data on component mount
-//     fetchData();
-//   }, []);
-
-//   const fetchData = async () => {
-//     try {
-//       setLoading(true);
-//       const response = await fetch(`YOUR_API_ENDPOINT?page=${page}`);
-//       const newData = await response.json();
-//       setData(prevData => [...prevData, ...newData]);
-//       setPage(page + 1);
-//       setLoading(false);
-//     } catch (error) {
-//       console.error('Error fetching data:', error);
-//       setLoading(false);
-//     }
-//   };
-
-//   const renderFooter = () => {
-//     if (!loading) return null;
-//     return <ActivityIndicator size="large" color="blue" />;
-//   };
-
-//   const renderItem = ({ item }) => {
-//     return (
-//       <View style={{ padding: 16 }}>
-//         <Text>{item.title}</Text>
-//       </View>
-//     );
-//   };
-
-//   return (
-//     <View style={{ flex: 1 }}>
-//       <FlatList
-//         data={data}
-//         renderItem={renderItem}
-//         keyExtractor={(item, index) => index.toString()}
-//         onEndReached={fetchData} // This will be triggered when the user reaches the end of the list
-//         onEndReachedThreshold={0.1} // Adjust the value if you want to trigger earlier or later
-//         ListFooterComponent={renderFooter} // Show loading indicator at the bottom
-//       />
-//     </View>
-//   );
-// };
-
-// export default YourComponent;

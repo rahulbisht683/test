@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -14,42 +14,94 @@ import Icon from 'react-native-vector-icons/AntDesign';
 // import {styles} from './CreateProfile.jsx';
 import {useTheme} from '../../context/themecontext';
 import Snackbar from 'react-native-snackbar';
-import {CREATE_PROFILE} from '../../gqloperations/mutations';
+import {CREATE_PROFILE, UPDATE_PROFILE} from '../../gqloperations/mutations';
 import {useMutation} from '@apollo/client';
+import CircularLoader from '../../components/Loader';
+import {selectedprofile} from '../../context/selectedProfile';
 
 const {width, height} = Dimensions.get('window');
 const CreateProfile = ({navigation, route}) => {
   const {theme, toggleTheme, themetype} = useTheme();
+  const {selecteddata} = selectedprofile();
+
   const [formData, setFormData] = useState({
-    firstName: 'bhjbj',
-    lastName: '',
+    first_name: '',
+    last_name: '',
     email: '',
-    isVerified: false,
-    imageUrl: '',
+    is_verified: true,
+    image_url: '',
     description: '',
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [createProfile, {loading: mutationLoading, error: mutationError}] =
     useMutation(CREATE_PROFILE);
 
+  const [updateProfile, {loading: umutationLoading, error: umutationError}] =
+    useMutation(UPDATE_PROFILE);
+
   const handleformdata = (name, value) => {
     // console.log('name', e.target.name);
+    console.log(name, value);
     setFormData({
       ...formData,
       [name]: value,
     });
   };
+  useEffect(() => {
+    if (route?.params?.type != 'create') {
+      setFormData(selecteddata);
+      console.log('selectedData', selecteddata);
+    }
+  }, []);
+
+  const handleUpdateUser = () => {
+    setLoading(true);
+
+    const {id, __typename, ...newobj2} = formData;
+    let updatedData = {...newobj2, updateProfileId: selecteddata.id};
+    console.log('formdataaaa', updatedData);
+    updateProfile({
+      variables: {
+        updateProfileId: selecteddata.id,
+        firstName: formData.first_name,
+        lastName: formData.last_name,
+        email: formData.email,
+        isVerified: formData.is_verified,
+        imageUrl: formData.image_url,
+        description: formData.description,
+      },
+    })
+      .then(result => {
+        setLoading(false);
+        navigation.navigate('Home');
+        console.log('Updated User:', result.data.createProfile);
+        Snackbar.show({
+          text: 'User Data Updated Successfully',
+          duration: Snackbar.LENGTH_LONG,
+        });
+      })
+      .catch(error => {
+        setLoading(false);
+        console.error('Error creating user:', error.message);
+        Snackbar.show({
+          text: 'Something Went Wrong',
+          duration: Snackbar.LENGTH_LONG,
+        });
+      });
+  };
 
   const handleCreateUser = () => {
+    setLoading(true);
     // Check if any required field is missing in the form data
     if (
-      !formData.firstName ||
-      !formData.lastName ||
+      !formData.first_name ||
+      !formData.last_name ||
       !formData.email ||
-      formData.imageUrl ||
-      !formData.isVerified ||
+      !formData.image_url ||
       !formData.description
     ) {
+      setLoading(false);
+      console.log(formData);
       Snackbar.show({
         text: 'Please fill all then feilds',
         duration: Snackbar.LENGTH_LONG,
@@ -57,9 +109,26 @@ const CreateProfile = ({navigation, route}) => {
       return;
     }
     createProfile({
-      variables: formData,
+      variables: {
+        firstName: formData.first_name,
+        lastName: formData.last_name,
+        email: formData.email,
+        isVerified: formData.is_verified,
+        imageUrl: formData.image_url,
+        description: formData.description,
+      },
     })
       .then(result => {
+        setLoading(false);
+        setFormData({
+          first_name: '',
+          last_name: '',
+          email: '',
+          is_verified: true,
+          image_url: '',
+          description: '',
+        });
+        navigation.navigate('Home');
         console.log('New user created:', result.data.createProfile);
         Snackbar.show({
           text: 'New User Created Successfully',
@@ -67,6 +136,7 @@ const CreateProfile = ({navigation, route}) => {
         });
       })
       .catch(error => {
+        setLoading(false);
         console.error('Error creating user:', error.message);
         Snackbar.show({
           text: 'Something Went Wrong',
@@ -78,6 +148,8 @@ const CreateProfile = ({navigation, route}) => {
   return (
     <KeyboardAvoidingView
       style={[styles.maindiv, {backgroundColor: theme.primaryBackground}]}>
+      {loading ? <CircularLoader /> : null}
+
       <View style={[styles.headerDiv, {borderBottomColor: theme.text}]}>
         <Text
           style={{
@@ -102,9 +174,9 @@ const CreateProfile = ({navigation, route}) => {
         }}>
         <Text style={[styles.formtext, {color: theme.text}]}>Image link</Text>
         <TextInput
-          placeholderTextColor={theme.text}
-          value={formData.imageUrl}
-          onChange={e => handleformdata('imageUrl', e.target.value)}
+          placeholderTextColor={theme.gtext}
+          placeholder={selecteddata?.image_url}
+          onChangeText={val => handleformdata('image_url', val)}
           style={[styles.inputbox, {color: theme.text}]}></TextInput>
 
         <View
@@ -119,10 +191,11 @@ const CreateProfile = ({navigation, route}) => {
               First name
             </Text>
             <TextInput
-              placeholderTextColor={theme.text}
-              name="firstName"
-              value={formData.firstName}
-              onChange={e => handleformdata('firstName', e.target.value)}
+              name="first_name"
+              // value={formData.first_name}
+              placeholderTextColor={theme.gtext}
+              placeholder={selecteddata?.first_name}
+              onChangeText={val => handleformdata('first_name', val)}
               style={[styles.inputbox, {color: theme.text}]}></TextInput>
           </View>
           <View style={{width: '45%'}}>
@@ -130,9 +203,9 @@ const CreateProfile = ({navigation, route}) => {
               Last name
             </Text>
             <TextInput
-              placeholderTextColor={theme.text}
-              value={formData.lastName}
-              onChange={e => handleformdata('lastName', e.target.value)}
+              placeholderTextColor={theme.gtext}
+              placeholder={selecteddata?.last_name}
+              onChangeText={val => handleformdata('last_name', val)}
               style={[styles.inputbox, {color: theme.text}]}></TextInput>
           </View>
         </View>
@@ -144,9 +217,9 @@ const CreateProfile = ({navigation, route}) => {
           Email
         </Text>
         <TextInput
-          placeholderTextColor={theme.text}
-          value={formData.email}
-          onChange={e => handleformdata('email', e.target.value)}
+          placeholderTextColor={theme.gtext}
+          placeholder={selecteddata?.email}
+          onChangeText={val => handleformdata('email', val)}
           style={[styles.inputbox, {color: theme.text}]}></TextInput>
         <Text
           style={[
@@ -157,13 +230,15 @@ const CreateProfile = ({navigation, route}) => {
         </Text>
         <TextInput
           textAlignVertical="top"
-          value={formData.description}
           multiline={true}
           placeholder="Write a description for the talent"
-          placeholderTextColor={theme.text}
+          placeholderTextColor={theme.gtext}
           name="description"
-          onChange={e => handleformdata('description', e.target.value)}
-          style={[styles.inputbox, {height: height * 0.2}]}></TextInput>
+          onChangeText={val => handleformdata('description', val)}
+          style={[
+            styles.inputbox,
+            {height: height * 0.2, color: theme.text},
+          ]}></TextInput>
         <Text
           style={[
             styles.formtext,
@@ -188,7 +263,12 @@ const CreateProfile = ({navigation, route}) => {
       </View>
       <View
         style={[styles.UpdateprofileOuterDiv, {borderTopColor: theme.text}]}>
-        <View
+        <TouchableOpacity
+          onPress={() =>
+            route?.params?.type == 'edit'
+              ? handleUpdateUser()
+              : handleCreateUser()
+          }
           style={{
             backgroundColor: '#3DACFF',
             justifyContent: 'center',
@@ -202,9 +282,11 @@ const CreateProfile = ({navigation, route}) => {
               color: 'white',
               fontWeight: '600',
             }}>
-            Update Profile
+            {route?.params?.type !== 'edit'
+              ? 'Create Profile'
+              : 'Update Profile'}
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );

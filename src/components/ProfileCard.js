@@ -23,9 +23,12 @@ const ProfileCard = ({props, editremove, newScreen, removeP}) => {
               }}></Image>
           </View>
           <View>
-            <View style={styles.userDetaildiv}>
-              <Text style={[styles.textd, {color: theme.text}]}>
-                {props.item.name}
+            <View style={[styles.userDetaildiv, {width: width * 0.4}]}>
+              <Text
+                ellipsizeMode="tail"
+                numberOfLines={1}
+                style={[styles.textd, {color: theme.text}]}>
+                {props.item.first_name + ' ' + props?.item?.last_name}
               </Text>
               <View
                 style={{
@@ -40,10 +43,13 @@ const ProfileCard = ({props, editremove, newScreen, removeP}) => {
               </View>
             </View>
             <Text
+              ellipsizeMode="tail"
+              numberOfLines={1}
               style={{
                 color: 'black',
                 fontSize: RFValue(12),
                 color: theme.gtext,
+                width: width * 0.5,
               }}>
               {props.item.email}
             </Text>
@@ -63,12 +69,12 @@ const ProfileCard = ({props, editremove, newScreen, removeP}) => {
                   {backgroundColor: theme.fixedpopup},
                 ]}>
                 <Text
-                  onPress={() => newScreen('edit', item)}
+                  onPress={() => newScreen('edit', props.item)}
                   style={[styles.editprofile, {color: theme.text}]}>
                   Edit profile
                 </Text>
                 <Text
-                  onPress={() => removeP()}
+                  onPress={() => removeP(props.item)}
                   style={[styles.editprofile, {color: theme.text}]}>
                   Remove profile
                 </Text>
@@ -78,7 +84,7 @@ const ProfileCard = ({props, editremove, newScreen, removeP}) => {
         </View>
       </View>
       <Text style={{marginTop: height * 0.02, color: theme.text}}>
-        {props.item.message}
+        {props.item.description}
       </Text>
     </View>
   );
@@ -146,7 +152,7 @@ const styles = StyleSheet.create({
   userDetaildiv: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    // justifyContent: 'center',
   },
   textd: {
     fontSize: RFValue(17),
@@ -173,7 +179,7 @@ const styles = StyleSheet.create({
     paddingVertical: height * 0.03,
     paddingHorizontal: width * 0.04,
     backgroundColor: '#EEEEEE',
-    alignItems: 'center',
+    // alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
     marginTop: height * 0.02,

@@ -8,7 +8,7 @@ export const SelectedProfileProvider = ({children}) => {
   const [selectedData, setSelectedData] = useState();
 
   const changeData = sprofile => {
-    setSelectedData(data);
+    setSelectedData(sprofile);
   };
 
   const selecteddata = selectedData;
