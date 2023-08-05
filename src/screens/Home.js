@@ -307,7 +307,9 @@ const Home = ({navigation, route}) => {
             justifyContent: 'center',
             marginTop: height * 0.02,
           }}>
-          <Text style={styles.textd}>No profile found</Text>
+          <Text style={[styles.textd, {color: theme.text}]}>
+            No profile found
+          </Text>
         </View>
       ) : (
         <FlatList
