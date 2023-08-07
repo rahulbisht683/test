@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Switch,
   TextInput,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -18,6 +19,7 @@ import {CREATE_PROFILE, UPDATE_PROFILE} from '../../gqloperations/mutations';
 import {useMutation} from '@apollo/client';
 import CircularLoader from '../../components/Loader';
 import {selectedprofile} from '../../context/selectedProfile';
+import {ScrollView} from 'react-native-gesture-handler';
 
 const {width, height} = Dimensions.get('window');
 const CreateProfile = ({navigation, route}) => {
@@ -47,6 +49,7 @@ const CreateProfile = ({navigation, route}) => {
       [name]: value,
     });
   };
+
   useEffect(() => {
     if (route?.params?.type != 'create') {
       setFormData(selecteddata);
@@ -103,7 +106,7 @@ const CreateProfile = ({navigation, route}) => {
       setLoading(false);
       console.log(formData);
       Snackbar.show({
-        text: 'Please fill all then feilds',
+        text: 'Please fill all the feilds',
         duration: Snackbar.LENGTH_LONG,
       });
       return;
@@ -146,7 +149,7 @@ const CreateProfile = ({navigation, route}) => {
   };
 
   return (
-    <KeyboardAvoidingView
+    <ScrollView
       style={[styles.maindiv, {backgroundColor: theme.primaryBackground}]}>
       {loading ? <CircularLoader /> : null}
 
@@ -250,16 +253,31 @@ const CreateProfile = ({navigation, route}) => {
           ]}>
           Verification
         </Text>
-        <Text
-          style={[
-            styles.Vtext,
-            {
-              backgroundColor: themetype ? theme.lowwhite : '#E0E0E0',
-              color: theme.text,
-            },
-          ]}>
-          Talent is verified
-        </Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            backgroundColor: themetype ? theme.lowwhite : '#E0E0E0',
+            justifyContent: 'space-between',
+          }}>
+          <Text
+            style={[
+              styles.Vtext,
+              {
+                color: theme.text,
+              },
+            ]}>
+            Talent is verified
+          </Text>
+          <Switch
+            trackColor={{
+              false: '#92D0FF',
+            }}
+            thumbColor={'#3DACFF'}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={e => handleformdata('is_verified', e)}
+            value={formData.is_verified}
+          />
+        </View>
       </View>
       <View
         style={[styles.UpdateprofileOuterDiv, {borderTopColor: theme.text}]}>
@@ -288,7 +306,7 @@ const CreateProfile = ({navigation, route}) => {
           </Text>
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </ScrollView>
   );
 };
 
@@ -296,7 +314,7 @@ export default CreateProfile;
 const styles = StyleSheet.create({
   maindiv: {
     backgroundColor: 'white',
-    flex: 1,
+    // flex: 1,
   },
   headerDiv: {
     flexDirection: 'row',
@@ -321,7 +339,7 @@ const styles = StyleSheet.create({
   },
   Vtext: {
     color: 'rgba(0,0,0,1)',
-    backgroundColor: '#E0E0E0',
+
     fontSize: RFValue(16),
     letterSpacing: 1,
     fontWeight: '700',
@@ -332,11 +350,12 @@ const styles = StyleSheet.create({
   },
   UpdateprofileOuterDiv: {
     alignItems: 'flex-end',
-    flex: 1,
+    // flex: 1,
     width: '100%',
     justifyContent: 'center',
     paddingRight: width * 0.05,
     borderTopColor: 'rgba(0,0,0.0.4)',
+    paddingTop: height * 0.02,
     borderTopWidth: 0.5,
     marginTop: height * 0.01,
   },

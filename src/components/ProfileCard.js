@@ -19,7 +19,7 @@ const ProfileCard = ({props, editremove, newScreen, removeP}) => {
             <Image
               style={styles.userprofile}
               source={{
-                uri: 'https://www.gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50?s=200',
+                uri: props?.item?.image_url,
               }}></Image>
           </View>
           <View>
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   imagediv: {
     height: width * 0.11,
     width: width * 0.11,
-    backgroundColor: 'red',
+    backgroundColor: 'grey',
     borderRadius: 100,
     overflow: 'hidden',
   },

@@ -262,8 +262,11 @@ const Home = ({navigation, route}) => {
             size={24}
             style={{justifyContent: 'flex-end'}}></Icon2>
           <Switch
-            trackColor={{false: '#767577', true: '#81b0ff'}}
-            thumbColor={'#f5dd4b'}
+            trackColor={{
+              false: 'rgba(0,0,0,0.5)',
+              true: 'rgba(255,255,255,0.2)',
+            }}
+            thumbColor={'white'}
             ios_backgroundColor="#3e3e3e"
             onValueChange={toggleSwitch}
             value={themetype}
